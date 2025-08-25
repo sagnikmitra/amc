@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>AMC Finder • ISIN → AMC, Logo & Colors</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <h1>Find AMC by ISIN</h1>
+  <div class="sub">Enter an ISIN (e.g., <code>INF178L01012</code> or <code>INF189A01046</code>). The app looks up <code>./data.json</code>, detects the AMC from the fund name, and shows Logo & Colors.</div>
+
+  <div class="row">
+    <label class="input" title="Enter an ISIN">
+      <input id="isin" placeholder="e.g., INF189A01046" autocapitalize="characters" autofocus/>
+    </label>
+    <button class="btn" id="go">Lookup</button>
+    <button class="btn" id="demo">Load Demo ISINs</button>
+  </div>
+
+  <div id="msg" class="nohit" style="display:none" role="status" aria-live="polite"></div>
+
+  <section id="card" class="card" aria-live="polite">
+    <div class="top">
+      <div class="topgrid">
+        <div class="logo"><img id="logo" alt="AMC logo"/></div>
+        <div>
+          <div class="title" id="amc-name">—</div>
+          <div class="muted" id="host">—</div>
+        </div>
+      </div>
+      <div id="grad" class="grad"></div>
+    </div>
+
+    <div class="kv">
+      <div class="k">Fund Name</div><div class="v" id="fund-name">—</div>
+      <div class="k">ISIN</div><div class="v"><code id="fund-isin">—</code></div>
+    </div>
+
+    <div class="sw">
+      <div class="box">
+        <div id="pchip" class="chip">—</div>
+        <div class="code"><span class="pill">Primary</span><button id="pcopy" class="copy" disabled>Copy</button></div>
+      </div>
+      <div class="box">
+        <div id="schip" class="chip">—</div>
+        <div class="code"><span class="pill">Secondary</span><button id="scopy" class="copy" disabled>Copy</button></div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
