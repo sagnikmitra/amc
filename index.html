@@ -5,21 +5,16 @@
 <title>AMC Finder • Logo & Colors by Fund Name</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
-  :root{
-    --bg:#0f1115; --card:#151922; --ink:#e8eef6; --muted:#95a3b8; --line:#222734;
-  }
+  :root{ --bg:#0f1115; --card:#151922; --ink:#e8eef6; --muted:#95a3b8; --line:#222734; }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;padding:28px}
   h1{margin:0 0 10px;font-size:20px}
   .sub{color:var(--muted);margin-bottom:18px}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
-  .input{
-    display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);
-    border-radius:12px;background:#0d1016;min-width:280px;flex:1
-  }
+  .input{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#0d1016;min-width:280px;flex:1}
   .input input{border:none;outline:none;background:transparent;color:var(--ink);width:100%}
-  .btn{appearance:none;border:1px solid var(--line);background:#111726;color:var(--ink);
-    padding:10px 14px;border-radius:12px;cursor:pointer}
+  .btn{appearance:none;border:1px solid var(--line);background:#111726;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
   .hint{color:var(--muted);font-size:12px}
   .card{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:none}
   .card.show{display:block}
@@ -36,29 +31,26 @@
   .code{padding:8px 10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
   .pill{font-size:11px;padding:2px 8px;border-radius:999px;background:#0d131b;border:1px solid var(--line);color:#95a3b8}
   .copy{border:1px solid var(--line);background:#111726;color:var(--ink);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px}
-  .null{opacity:.6}
   .nohit{margin-top:10px;padding:12px;border:1px dashed #394055;border-radius:10px;background:#0d1318;color:#b2c7d7}
-  .aliases{margin-top:6px;color:#95a3b8;font-size:12px}
   h2{margin:26px 0 10px;font-size:18px}
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-    gap:16px;
-    margin-top:6px
-  }
-  .card-mini{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:14px;
-    overflow:hidden;
-    cursor:pointer
-  }
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:6px}
+  .card-mini{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer}
   .card-mini .mini-top{padding:12px;border-bottom:1px solid var(--line)}
   .card-mini .logo-title{display:flex;gap:12px;align-items:center;margin-bottom:10px}
   .card-mini .logo-wrap{width:50px;height:50px;border-radius:12px;overflow:hidden;background:#fff;display:grid;place-items:center;border:1px solid #e9eef3}
   .card-mini .logo-wrap img{max-width:90%;max-height:90%;object-fit:contain}
   .card-mini .gradient-bar{height:20px;border-radius:6px;border:1px solid var(--line)}
   .card-mini .swatches{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+
+  /* Add-your-own section */
+  .uploader{margin-top:24px;padding:16px;border:1px dashed var(--line);border-radius:14px;background:#0d1016}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stack{display:grid;gap:8px}
+  .tiny{font-size:11px;color:#8ea0b6}
+  .inputs-inline{display:flex;gap:8px;flex-wrap:wrap}
+  .hexinput{background:#0d1016;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);width:140px}
+  .thumb{width:48px;height:48px;border-radius:10px;background:#fff;border:1px solid #e9eef3;display:grid;place-items:center;overflow:hidden}
+  .added{margin-top:10px;padding:10px;border:1px dashed #394055;border-radius:10px;background:#0d1216}
 </style>
 </head>
 <body>
@@ -99,7 +91,48 @@
   <h2>All AMCs</h2>
   <div id="grid" class="grid"></div>
 
+  <!-- ==== Add your own AMC (LAST SECTION) ==== -->
+  <h2>Add your own AMC</h2>
+  <div class="uploader">
+    <div class="two">
+      <div class="stack">
+        <span class="tiny">AMC / Bank Name</span>
+        <label class="input"><input id="u-name" placeholder="e.g., Perccent Asset Management"/></label>
+      </div>
+      <div class="stack">
+        <span class="tiny">Logo URL (optional if uploading)</span>
+        <label class="input"><input id="u-url" placeholder="https://example.com/logo.png"/></label>
+      </div>
+    </div>
+
+    <div class="two" style="margin-top:10px">
+      <div class="stack">
+        <span class="tiny">Upload Logo Image</span>
+        <div class="inputs-inline">
+          <input type="file" id="u-file" accept="image/*" class="btn" />
+          <button class="btn" id="u-detect">Detect colors</button>
+        </div>
+        <div class="inputs-inline" style="margin-top:8px;align-items:center">
+          <div class="thumb"><img id="u-thumb" alt="preview" style="max-width:90%;max-height:90%;object-fit:contain;display:none"/></div>
+          <span class="tiny" id="u-src">No image yet</span>
+        </div>
+      </div>
+      <div class="stack">
+        <span class="tiny">Primary & 20% darker (editable)</span>
+        <div class="inputs-inline">
+          <input class="hexinput" id="u-primary" placeholder="#RRGGBB"/>
+          <input class="hexinput" id="u-secondary" placeholder="#RRGGBB"/>
+          <button class="btn" id="u-add" disabled>Add to list</button>
+        </div>
+        <span class="tiny">Tip: You can tweak hexes before adding.</span>
+      </div>
+    </div>
+
+    <div id="added" class="added" style="display:none"></div>
+  </div>
+
 <script>
+/* ===== Seed Data ===== */
 const COLORS = [
   {"name":"360 ONE","primaryHex":"#05030f","secondaryHex":"#04020c"},
   {"name":"Aditya Birla Sun Life","primaryHex":"#d44945","secondaryHex":"#b72e2a"},
@@ -200,6 +233,7 @@ const LOGOS = [
   {"name":"Zerodha","logo":"https://indcdn.indmoney.com/public/images/mf_zerodha.png"}
 ];
 
+/* ===== Alias map (used earlier in your code) kept as-is ===== */
 const ALIASES = {
   "Aditya Birla Sun Life": ["aditya birla","birla","absl","aditya birla sun life"],
   "Axis": ["axis"],
@@ -297,23 +331,23 @@ function renderGrid(){
     card.innerHTML=`
       <div class="mini-top">
         <div class="logo-title">
-          <div class="logo-wrap"><img src="${logo}" alt="${item.name} logo"/></div>
+          <div class="logo-wrap"><img src="${logo||''}" alt="${item.name} logo"/></div>
           <div><div class="title">${item.name}</div></div>
         </div>
         <div class="gradient-bar" style="background:${item.primaryHex&&item.secondaryHex?`linear-gradient(to right,${item.primaryHex},${item.secondaryHex})`:'#222'}"></div>
       </div>
       <div class="swatches">
         <div class="box">
-          <div class="chip" style="background:${item.primaryHex};color:${textOn(item.primaryHex)}">${item.primaryHex||'—'}</div>
+          <div class="chip" style="background:${item.primaryHex||'transparent'};color:${textOn(item.primaryHex)}">${item.primaryHex||'—'}</div>
           <div class="code"><span class="pill">Primary</span><button class="copy" data-copy="${item.primaryHex||''}" ${item.primaryHex?'':'disabled'}>Copy</button></div>
         </div>
         <div class="box">
-          <div class="chip" style="background:${item.secondaryHex};color:${textOn(item.secondaryHex)}">${item.secondaryHex||'—'}</div>
+          <div class="chip" style="background:${item.secondaryHex||'transparent'};color:${textOn(item.secondaryHex)}">${item.secondaryHex||'—'}</div>
           <div class="code"><span class="pill">Secondary</span><button class="copy" data-copy="${item.secondaryHex||''}" ${item.secondaryHex?'':'disabled'}>Copy</button></div>
         </div>
       </div>`;
     card.querySelectorAll('button.copy').forEach(btn=>{
-      btn.onclick=async e=>{
+      btn.onclick=async ()=>{
         const v=btn.dataset.copy;if(!v) return;
         await navigator.clipboard.writeText(v);
         const old=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old,800);
@@ -323,6 +357,181 @@ function renderGrid(){
   });
 }
 renderGrid();
+
+/* ====== ADD-YOUR-OWN logic ====== */
+const upName = $('u-name');
+const upUrl = $('u-url');
+const upFile = $('u-file');
+const upDetect = $('u-detect');
+const upThumb = $('u-thumb');
+const upSrc = $('u-src');
+const upPrimary = $('u-primary');
+const upSecondary = $('u-secondary');
+const upAdd = $('u-add');
+const addedBox = $('added');
+
+let loadedImage = new Image();
+let loadedSource = null; // string: URL or objectURL
+loadedImage.crossOrigin = 'anonymous'; // attempt CORS for remote
+
+// helper: RGB -> hex
+function rgbToHex(r,g,b){
+  const to2 = v => ('0'+Math.max(0,Math.min(255, v|0)).toString(16)).slice(-2);
+  return '#'+to2(r)+to2(g)+to2(b);
+}
+// helper: darken by 20%
+function darken20(hex){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
+  if(!m) return '';
+  const r = Math.floor(parseInt(m[1],16)*0.8);
+  const g = Math.floor(parseInt(m[2],16)*0.8);
+  const b = Math.floor(parseInt(m[3],16)*0.8);
+  return rgbToHex(r,g,b);
+}
+
+// Your provided average RGB function
+function getAverageRGB(imgEl) {
+  var blockSize = 5,
+      defaultRGB = {r:0,g:0,b:0},
+      canvas = document.createElement('canvas'),
+      context = canvas.getContext && canvas.getContext('2d'),
+      data, width, height,
+      i = -4,
+      length,
+      rgb = {r:0,g:0,b:0},
+      count = 0;
+
+  if (!context) { return defaultRGB; }
+
+  height = canvas.height = imgEl.naturalHeight || imgEl.offsetHeight || imgEl.height;
+  width = canvas.width = imgEl.naturalWidth || imgEl.offsetWidth || imgEl.width;
+
+  context.drawImage(imgEl, 0, 0);
+
+  try {
+      data = context.getImageData(0, 0, width, height);
+  } catch(e) {
+      alert('Cannot read pixels from this image (CORS blocked). Try uploading the file instead.');
+      return defaultRGB;
+  }
+
+  length = data.data.length;
+
+  while ( (i += blockSize * 4) < length ) {
+      ++count;
+      rgb.r += data.data[i];
+      rgb.g += data.data[i+1];
+      rgb.b += data.data[i+2];
+  }
+
+  rgb.r = ~~(rgb.r/count);
+  rgb.g = ~~(rgb.g/count);
+  rgb.b = ~~(rgb.b/count);
+
+  return rgb;
+}
+
+// load image from URL or object URL and show preview
+function loadForPreview(src){
+  return new Promise((resolve,reject)=>{
+    loadedImage.onload = ()=>{ 
+      upThumb.style.display='block';
+      upThumb.src = src;
+      upSrc.textContent = src;
+      loadedSource = src;
+      resolve();
+    };
+    loadedImage.onerror = reject;
+    loadedImage.src = src;
+  });
+}
+
+// File upload handler
+upFile.addEventListener('change', async () => {
+  const f = upFile.files && upFile.files[0];
+  if(!f) return;
+  const obj = URL.createObjectURL(f);
+  try{
+    await loadForPreview(obj);
+  }catch{
+    upSrc.textContent = 'Failed to load image.';
+  }
+});
+
+// URL change handler – live preview if possible
+upUrl.addEventListener('change', async ()=>{
+  const url = upUrl.value.trim();
+  if(!url) return;
+  try{
+    await loadForPreview(url);
+  }catch{
+    upSrc.textContent = 'Failed to load URL image. You can try uploading the file.';
+  }
+});
+
+// Detect colors
+upDetect.addEventListener('click', ()=>{
+  if(!loadedImage || !loadedImage.complete){
+    alert('Please paste a Logo URL or upload a logo first.');
+    return;
+  }
+  const avg = getAverageRGB(loadedImage);
+  const primary = rgbToHex(avg.r, avg.g, avg.b);
+  const secondary = darken20(primary);
+  upPrimary.value = primary;
+  upSecondary.value = secondary;
+  upAdd.disabled = !upName.value.trim() || !primary || !secondary;
+});
+
+// Enable Add button when name/hex present
+function maybeEnableAdd(){
+  upAdd.disabled = !(upName.value.trim() && /^#?[0-9a-f]{6}$/i.test(upPrimary.value.trim()) && /^#?[0-9a-f]{6}$/i.test(upSecondary.value.trim()));
+}
+upName.addEventListener('input', maybeEnableAdd);
+upPrimary.addEventListener('input', maybeEnableAdd);
+upSecondary.addEventListener('input', maybeEnableAdd);
+
+// Normalize hex like #AABBCC
+function normalizeHex(h){
+  h = h.trim();
+  if(!h.startsWith('#')) h = '#'+h;
+  return h.toUpperCase();
+}
+
+// Add to list & re-render
+upAdd.addEventListener('click', ()=>{
+  const name = upName.value.trim();
+  if(!name){ alert('Enter a name.'); return; }
+
+  const p = normalizeHex(upPrimary.value);
+  const s = normalizeHex(upSecondary.value);
+
+  // decide logo path: prefer uploaded/URL preview, else typed URL
+  let logoPath = loadedSource || upUrl.value.trim() || '';
+
+  // append to arrays
+  COLORS.push({ name, primaryHex: p, secondaryHex: s });
+  LOGOS.push({ name, logo: logoPath });
+
+  // update maps
+  logoBy.set(name, logoPath);
+  colorBy.set(name, {p, s});
+
+  // show quick line with details
+  addedBox.style.display='block';
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="tiny">Added:</span> <strong>${name}</strong> &nbsp;|&nbsp; <span class="tiny">Logo:</span> <span style="opacity:.9">${logoPath || '—'}</span> &nbsp;|&nbsp; <span class="tiny">Primary:</span> <code>${p}</code> &nbsp; <span class="tiny">Secondary:</span> <code>${s}</code>`;
+  addedBox.appendChild(line);
+
+  // refresh grid
+  renderGrid();
+
+  // reset minimal form state (keep image/URL for convenience)
+  upName.value = '';
+  upAdd.disabled = true;
+});
+
+/* ===== initial grid render already called above ===== */
 </script>
 </body>
 </html>
