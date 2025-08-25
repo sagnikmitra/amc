@@ -1,79 +1,80 @@
-// worker.js — AMC color API
-// GET /amc/<ISIN>/(primary|secondary|json)
+// worker.js — serves both UI and API under /amc/*
+// API endpoints:
+//   GET /amc/<ISIN>/primary
+//   GET /amc/<ISIN>/secondary
+//   GET /amc/<ISIN>/json
+// Static files: all other /amc/* served from /public
 
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
-
     const url = new URL(request.url);
+
+    // --- API matcher
     const m = url.pathname.match(/^\/amc\/([A-Za-z0-9]{12})\/(primary|secondary|json)$/);
-    if (!m) return cors(txt('Not found', 404));
+    if (m) {
+      const [, isinRaw, kind] = m;
+      const ISIN = isinRaw.toUpperCase();
+      try {
+        // read JSONs from bundled assets (public/)
+        const amcData = await readJsonFromAssets(env, '/amc_data.json');
+        const isinList = await readJsonFromAssets(env, '/data.json');
 
-    const [, isinRaw, kind] = m;
-    const ISIN = isinRaw.toUpperCase();
+        const rec = isinList.find(x => x && String(x.isin).toUpperCase() === ISIN);
+        if (!rec) return cors(txt('ISIN not found', 404));
+        const fund = String(rec.name);
 
-    try {
-      const AMCD_URL = 'https://sagnikmitra.com/amc/amc_data.json';
-      const ISIN_URL = 'https://sagnikmitra.com/amc/data.json';
+        const COLORS  = amcData.colors  || [];
+        const LOGOS   = amcData.logos   || [];
+        const ALIASES = amcData.aliases || {};
 
-      const [amcRes, isinRes] = await Promise.all([
-        fetch(AMCD_URL, { cf: { cacheTtl: 3600 } }),
-        fetch(ISIN_URL, { cf: { cacheTtl: 3600 } }),
-      ]);
-      if (!amcRes.ok) throw new Error('amc_data.json ' + amcRes.status);
-      if (!isinRes.ok) throw new Error('data.json ' + isinRes.status);
+        const colorBy  = new Map(COLORS.map(x => [x.name, { p: x.primaryHex, s: x.secondaryHex }]));
+        const logoBy   = new Map(LOGOS.map(x => [x.name, x.logo]));
+        const amcNames = COLORS.map(c => c.name);
 
-      const amc = await amcRes.json();
-      const list = await isinRes.json();
+        const { label, known } = detectAMCLabel(fund, ALIASES, amcNames);
 
-      const rec = list.find(x => x && String(x.isin).toUpperCase() === ISIN);
-      if (!rec) return cors(txt('ISIN not found', 404));
-      const fund = String(rec.name);
+        let p, s, logo = null;
+        if (known && colorBy.has(label)) {
+          const pair = colorBy.get(label) || {};
+          p = pair.p || nameToHex(label);
+          s = pair.s || darken20(p);
+          logo = logoBy.get(label) || null;
+        } else {
+          p = nameToHex(label);
+          s = darken20(p);
+        }
 
-      const COLORS  = amc.colors  || [];
-      const LOGOS   = amc.logos   || [];
-      const ALIASES = amc.aliases || {};
+        if (kind === 'primary')   return cacheAndCors(txt(p), request, ctx);
+        if (kind === 'secondary') return cacheAndCors(txt(s), request, ctx);
+        if (kind === 'json')      return cacheAndCors(json({ isin: ISIN, fund, amc: label, primary: p, secondary: s, logo }), request, ctx);
 
-      const colorBy  = new Map(COLORS.map(x => [x.name, { p: x.primaryHex, s: x.secondaryHex }]));
-      const logoBy   = new Map(LOGOS.map(x => [x.name, x.logo]));
-      const amcNames = COLORS.map(c => c.name);
-
-      const { label, known } = detectAMCLabel(fund, ALIASES, amcNames);
-
-      let p, s, logo = null;
-      if (known && colorBy.has(label)) {
-        const pair = colorBy.get(label) || {};
-        p = pair.p || nameToHex(label);
-        s = pair.s || darken20(p);
-        logo = logoBy.get(label) || null;
-      } else {
-        p = nameToHex(label);
-        s = darken20(p);
+        return cors(txt('Not found', 404));
+      } catch (e) {
+        return cors(txt('Error: ' + e.message, 500));
       }
-
-      if (kind === 'primary')   return cors(txt(p));
-      if (kind === 'secondary') return cors(txt(s));
-      if (kind === 'json')      return cors(json({ isin: ISIN, fund, amc: label, primary: p, secondary: s, logo }));
-
-      return cors(txt('Not found', 404));
-    } catch (e) {
-      return cors(txt('Error: ' + e.message, 500));
     }
+
+    // --- static fallback: strip /amc prefix and serve from /public
+    let assetPath = url.pathname.replace(/^\/amc\/?/, '/');
+    if (assetPath === '/') assetPath = '/index.html';
+    const assetUrl = new URL(assetPath, 'http://assets.local');
+    return env.ASSETS.fetch(new Request(assetUrl, request));
   }
 };
 
 /* ---------- helpers ---------- */
+async function readJsonFromAssets(env, path) {
+  const u = new URL(path, 'http://assets.local');
+  const r = await env.ASSETS.fetch(new Request(u));
+  if (!r.ok) throw new Error(`Assets read failed for ${path} (${r.status})`);
+  return r.json();
+}
 function txt(s, status = 200) {
-  return new Response(s, {
-    status,
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-  });
+  return new Response(s, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
 function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' }
-  });
+  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 }
 function cors(res) {
   const h = new Headers(res.headers);
@@ -82,6 +83,13 @@ function cors(res) {
   h.set('Access-Control-Allow-Headers', '*');
   return new Response(res.body, { status: res.status, headers: h });
 }
+async function cacheAndCors(res, request, ctx) {
+  const cache = caches.default;
+  ctx.waitUntil(cache.put(new Request(request.url), res.clone()));
+  return cors(res);
+}
+
+// ---- AMC detection + color helpers ----
 const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function detectAMCLabel(fundName, aliases, amcNames){
   const q = norm(fundName);
