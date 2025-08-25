@@ -1,0 +1,10 @@
+{
+  "name": "amc-api",
+  "main": "worker.js",
+  "compatibility_date": "2024-11-01",
+  "routes": [
+    { "pattern": "sagnikmitra.com/amc/INF*/primary",   "zone_name": "sagnikmitra.com" },
+    { "pattern": "sagnikmitra.com/amc/INF*/secondary", "zone_name": "sagnikmitra.com" },
+    { "pattern": "sagnikmitra.com/amc/INF*/json",      "zone_name": "sagnikmitra.com" }
+  ]
+}
