@@ -1,25 +1,22 @@
-// worker.js — serves both UI and API under /amc/*
-// API endpoints:
-//   GET /amc/<ISIN>/primary
-//   GET /amc/<ISIN>/secondary
-//   GET /amc/<ISIN>/json
-// Static files: all other /amc/* served from /public
+// worker.js — serves UI + API under /amc/*
+// API: /amc/<ISIN>/(primary|secondary|json)
+// Static: everything else under /amc/* served from ./public
+
+import amcData from './public/amc_data.json';
+import isinList from './public/data.json';
 
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
     const url = new URL(request.url);
 
-    // --- API matcher
+    // --- API
     const m = url.pathname.match(/^\/amc\/([A-Za-z0-9]{12})\/(primary|secondary|json)$/);
     if (m) {
       const [, isinRaw, kind] = m;
       const ISIN = isinRaw.toUpperCase();
-      try {
-        // read JSONs from bundled assets (public/)
-        const amcData = await readJsonFromAssets(env, '/amc_data.json');
-        const isinList = await readJsonFromAssets(env, '/data.json');
 
+      try {
         const rec = isinList.find(x => x && String(x.isin).toUpperCase() === ISIN);
         if (!rec) return cors(txt('ISIN not found', 404));
         const fund = String(rec.name);
@@ -45,9 +42,9 @@ export default {
           s = darken20(p);
         }
 
-        if (kind === 'primary')   return cacheAndCors(txt(p), request, ctx);
-        if (kind === 'secondary') return cacheAndCors(txt(s), request, ctx);
-        if (kind === 'json')      return cacheAndCors(json({ isin: ISIN, fund, amc: label, primary: p, secondary: s, logo }), request, ctx);
+        if (kind === 'primary')   return cors(txt(p));
+        if (kind === 'secondary') return cors(txt(s));
+        if (kind === 'json')      return cors(json({ isin: ISIN, fund, amc: label, primary: p, secondary: s, logo }));
 
         return cors(txt('Not found', 404));
       } catch (e) {
@@ -55,7 +52,7 @@ export default {
       }
     }
 
-    // --- static fallback: strip /amc prefix and serve from /public
+    // --- Static: strip /amc prefix and serve from /public
     let assetPath = url.pathname.replace(/^\/amc\/?/, '/');
     if (assetPath === '/') assetPath = '/index.html';
     const assetUrl = new URL(assetPath, 'http://assets.local');
@@ -64,12 +61,6 @@ export default {
 };
 
 /* ---------- helpers ---------- */
-async function readJsonFromAssets(env, path) {
-  const u = new URL(path, 'http://assets.local');
-  const r = await env.ASSETS.fetch(new Request(u));
-  if (!r.ok) throw new Error(`Assets read failed for ${path} (${r.status})`);
-  return r.json();
-}
 function txt(s, status = 200) {
   return new Response(s, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
