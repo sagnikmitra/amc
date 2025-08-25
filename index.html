@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>AMC Finder • Logo & Colors by Fund Name</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  :root{
+    --bg:#0f1115; --card:#151922; --ink:#e8eef6; --muted:#95a3b8; --line:#222734;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;padding:28px}
+  h1{margin:0 0 10px;font-size:20px}
+  .sub{color:var(--muted);margin-bottom:18px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .input{
+    display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:12px;background:#0d1016;min-width:280px;flex:1
+  }
+  .input input{border:none;outline:none;background:transparent;color:var(--ink);width:100%}
+  .btn{appearance:none;border:1px solid var(--line);background:#111726;color:var(--ink);
+    padding:10px 14px;border-radius:12px;cursor:pointer}
+  .hint{color:var(--muted);font-size:12px}
+  .card{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:none}
+  .card.show{display:block}
+  .top{padding:14px;border-bottom:1px solid var(--line)}
+  .topgrid{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-bottom:12px}
+  .logo{width:60px;height:60px;border-radius:12px;background:#fff;border:1px solid #e9eef3;display:grid;place-items:center;overflow:hidden}
+  .logo img{max-width:90%;max-height:90%;object-fit:contain}
+  .title{font-weight:600}
+  .muted{color:var(--muted);font-size:12px}
+  .grad{height:24px;border-radius:8px;border:1px solid var(--line)}
+  .sw{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px}
+  .box{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .chip{height:46px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+  .code{padding:8px 10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .pill{font-size:11px;padding:2px 8px;border-radius:999px;background:#0d131b;border:1px solid var(--line);color:#95a3b8}
+  .copy{border:1px solid var(--line);background:#111726;color:var(--ink);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px}
+  .null{opacity:.6}
+  .nohit{margin-top:10px;padding:12px;border:1px dashed #394055;border-radius:10px;background:#0d1318;color:#b2c7d7}
+  .aliases{margin-top:6px;color:#95a3b8;font-size:12px}
+  h2{margin:26px 0 10px;font-size:18px}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:16px;
+    margin-top:6px
+  }
+  .card-mini{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    cursor:pointer
+  }
+  .card-mini .mini-top{padding:12px;border-bottom:1px solid var(--line)}
+  .card-mini .logo-title{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+  .card-mini .logo-wrap{width:50px;height:50px;border-radius:12px;overflow:hidden;background:#fff;display:grid;place-items:center;border:1px solid #e9eef3}
+  .card-mini .logo-wrap img{max-width:90%;max-height:90%;object-fit:contain}
+  .card-mini .gradient-bar{height:20px;border-radius:6px;border:1px solid var(--line)}
+  .card-mini .swatches{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+</style>
+</head>
+<body>
+  <h1>Find AMC by Fund Name</h1>
+  <div class="sub">Enter any fund name (e.g., <em>Tata xyzzy fund</em>, <em>HDFC Index</em>). We’ll match the AMC keyword and show its Logo & Colors.</div>
+  <div class="row">
+    <label class="input" title="Type a fund name">
+      <input id="fund" placeholder="Tata xyzzy fund, HDFC Index, Aditya Birla Gold…" autofocus/>
+    </label>
+    <button class="btn" id="go">Find AMC</button>
+  </div>
+
+  <div id="nohit" class="nohit" style="display:none">No AMC keyword found.</div>
+
+  <section id="card" class="card" aria-live="polite">
+    <div class="top">
+      <div class="topgrid">
+        <div class="logo"><img id="logo" alt="AMC logo"/></div>
+        <div>
+          <div class="title" id="name">—</div>
+          <div class="muted" id="host">—</div>
+        </div>
+      </div>
+      <div id="grad" class="grad"></div>
+    </div>
+    <div class="sw">
+      <div id="pbox" class="box">
+        <div id="pchip" class="chip">—</div>
+        <div class="code"><span class="pill">Primary</span><button id="pcopy" class="copy" disabled>Copy</button></div>
+      </div>
+      <div id="sbox" class="box">
+        <div id="schip" class="chip">—</div>
+        <div class="code"><span class="pill">Secondary</span><button id="scopy" class="copy" disabled>Copy</button></div>
+      </div>
+    </div>
+  </section>
+
+  <h2>All AMCs</h2>
+  <div id="grid" class="grid"></div>
+
+<script>
+const COLORS = [
+  {"name":"360 ONE","primaryHex":"#05030f","secondaryHex":"#04020c"},
+  {"name":"Aditya Birla Sun Life","primaryHex":"#d44945","secondaryHex":"#b72e2a"},
+  {"name":"Angel","primaryHex":"#edefe7","secondaryHex":"#c3c9af"},
+  {"name":"Axis","primaryHex":"#a53465","secondaryHex":"#842a51"},
+  {"name":"Bajaj Finserv","primaryHex":"#327cbc","secondaryHex":"#286396"},
+  {"name":"Bandhan","primaryHex":"#f1bdb0","secondaryHex":"#e48269"},
+  {"name":"BNP Paribas","primaryHex":"#d9d8cc","secondaryHex":"#b5b39c"},
+  {"name":"BOI AXA","primaryHex":"#254380","secondaryHex":"#1e3666"},
+  {"name":"Canara Robeco","primaryHex":"#19a3bd","secondaryHex":"#148297"},
+  {"name":"Capitalmind","primaryHex":"#ebe9ee","secondaryHex":"#bbb4c5"},
+  {"name":"DSP","primaryHex":"#264a68","secondaryHex":"#1e3b53"},
+  {"name":"Edelweiss","primaryHex":"#1e60b0","secondaryHex":"#184d8d"},
+  {"name":"Franklin Templeton","primaryHex":"#4f7a99","secondaryHex":"#3f627a"},
+  {"name":"Groww","primaryHex":"#bee0ec","secondaryHex":"#7cc1d9"},
+  {"name":"HDFC","primaryHex":"#c32323","secondaryHex":"#9c1c1c"},
+  {"name":"Helios","primaryHex":"#1c1208","secondaryHex":"#160e06"},
+  {"name":"HSBC","primaryHex":"#df1d2c","secondaryHex":"#b21723"},
+  {"name":"ICICI","primaryHex":"#ca5338","secondaryHex":"#a3422b"},
+  {"name":"Invesco","primaryHex":"#345097","secondaryHex":"#2a4079"},
+  {"name":"ITI","primaryHex":"#e05c47","secondaryHex":"#ca3922"},
+  {"name":"Jio BlackRock","primaryHex":null,"secondaryHex":null},
+  {"name":"JM Financial","primaryHex":"#30377f","secondaryHex":"#262c66"},
+  {"name":"Kotak","primaryHex":"#ba3753","secondaryHex":"#952c42"},
+  {"name":"LIC","primaryHex":"#3c66ab","secondaryHex":"#305289"},
+  {"name":"Mahindra","primaryHex":"#f5f0f0","secondaryHex":"#ceb6b6"},
+  {"name":"Mirae","primaryHex":"#1e5681","secondaryHex":"#184567"},
+  {"name":"Motilal Oswal","primaryHex":"#fcc543","secondaryHex":"#fbb204"},
+  {"name":"NAVI","primaryHex":"#37265a","secondaryHex":"#2c1e48"},
+  {"name":"Nippon","primaryHex":"#fed9d5","secondaryHex":"#fc867a"},
+  {"name":"Nj","primaryHex":"#bb6064","secondaryHex":"#9f4448"},
+  {"name":"Old Bridge","primaryHex":"#7a7a7b","secondaryHex":"#626262"},
+  {"name":"PGIM","primaryHex":"#c3cad1","secondaryHex":"#95a2ae"},
+  {"name":"PPFAS","primaryHex":"#dee2d7","secondaryHex":"#b4bda4"},
+  {"name":"Quant","primaryHex":"#111212","secondaryHex":"#0e0e0e"},
+  {"name":"Quantum","primaryHex":"#b6cce5","secondaryHex":"#79a2cf"},
+  {"name":"Samco","primaryHex":"#f4eff1","secondaryHex":"#cdb6bf"},
+  {"name":"SBI","primaryHex":"#2ba7e0","secondaryHex":"#1b88ba"},
+  {"name":"Shriram","primaryHex":"#787774","secondaryHex":"#605f5d"},
+  {"name":"Sundaram","primaryHex":"#3576b0","secondaryHex":"#2a5e8d"},
+  {"name":"Tata","primaryHex":"#3576b0","secondaryHex":"#2a5e8d"},
+  {"name":"Taurus","primaryHex":"#64302f","secondaryHex":"#502626"},
+  {"name":"Trust","primaryHex":"#f7f6f3","secondaryHex":"#d0cab8"},
+  {"name":"unifi","primaryHex":"#080403","secondaryHex":"#060302"},
+  {"name":"Union","primaryHex":"#1f4665","secondaryHex":"#193851"},
+  {"name":"UTI","primaryHex":"#cc7431","secondaryHex":"#a35d27"},
+  {"name":"WhiteOak","primaryHex":"#465d6c","secondaryHex":"#384a56"},
+  {"name":"Zerodha","primaryHex":"#565656","secondaryHex":"#454545"}
+];
+
+const LOGOS = [
+  {"name":"360 ONE","logo":"https://indcdn.indmoney.com/cdn-cgi/image/quality=90,format=auto,width=82.5/https://indcdn.indmoney.com//360_one_amc.png"},
+  {"name":"Aditya Birla Sun Life","logo":"https://indcdn.indmoney.com/public/images/amc_aditya_birla.png"},
+  {"name":"Angel","logo":"https://indcdn.indmoney.com/images/fe/angeloneamclogo.png"},
+  {"name":"Axis","logo":"https://indcdn.indmoney.com/public/images/amc_axis.png"},
+  {"name":"Bajaj Finserv","logo":"https://indcdn.indmoney.com/public/images/mf-bajaj-finserv-amc-logo-small.png"},
+  {"name":"Bandhan","logo":"https://indcdn.indmoney.com/public/images/amc_bandhan.png"},
+  {"name":"BNP Paribas","logo":"https://indcdn.indmoney.com/public/images/amc_bnp_paribas_bb.jpg"},
+  {"name":"BOI AXA","logo":"https://indcdn.indmoney.com/public/images/amc_boi_axa.png"},
+  {"name":"Canara Robeco","logo":"https://indcdn.indmoney.com/public/images/amc_canara.png"},
+  {"name":"Capitalmind","logo":"https://indcdn.indmoney.com/cdn-cgi/image/quality=90,format=auto,width=82.5/https://indcdn.indmoney.com//capitalmindmf_logo.jpg"},
+  {"name":"DSP","logo":"https://indcdn.indmoney.com/public/images/amc_dsp.png"},
+  {"name":"Edelweiss","logo":"https://indcdn.indmoney.com/public/images/amc_edelweiss.png"},
+  {"name":"Franklin Templeton","logo":"https://indcdn.indmoney.com/public/images/amc_franklin.png"},
+  {"name":"Groww","logo":"https://indcdn.indmoney.com/public/images/amc_groww.png"},
+  {"name":"HDFC","logo":"https://indcdn.indmoney.com/public/images/amc_hdfc.png"},
+  {"name":"Helios","logo":"https://indcdn.indmoney.com/cdn-cgi/image/quality=90,format=auto,width=82.5/https://indcdn.indmoney.com//helios-mutual-fund-amc.png"},
+  {"name":"HSBC","logo":"https://indcdn.indmoney.com/public/images/amc_hsbc.png"},
+  {"name":"ICICI","logo":"https://indcdn.indmoney.com/public/images/amc_icici.png"},
+  {"name":"Invesco","logo":"https://indcdn.indmoney.com/public/images/amc_invesco.png"},
+  {"name":"ITI","logo":"https://indcdn.indmoney.com/public/images/amc_iti.png"},
+  {"name":"Jio BlackRock","logo":"https://indcdn.indmoney.com/cdn-cgi/image/quality=90,format=auto,width=82.5/https://indcdn.indmoney.com//jio_blackrock_amc.png"},
+  {"name":"JM Financial","logo":"https://indcdn.indmoney.com/public/images/amc_jm.png"},
+  {"name":"Kotak","logo":"https://indcdn.indmoney.com/public/images/amc_kotak.png"},
+  {"name":"LIC","logo":"https://indcdn.indmoney.com/public/images/amc_lic.png"},
+  {"name":"Mahindra","logo":"https://indcdn.indmoney.com/public/images/mahindra-manulife-amc-thumbnail-logo.png"},
+  {"name":"Mirae","logo":"https://indcdn.indmoney.com/public/images/amc_mirae.png"},
+  {"name":"Motilal Oswal","logo":"https://indcdn.indmoney.com/public/images/amc_motilal.png"},
+  {"name":"NAVI","logo":"https://indcdn.indmoney.com/public/images/navi-amc-thumbnail-logo.png"},
+  {"name":"Nippon","logo":"https://indcdn.indmoney.com/public/images/amc_nippon.png"},
+  {"name":"Nj","logo":"https://indcdn.indmoney.com/public/images/amc_nj_asset.png"},
+  {"name":"Old Bridge","logo":"https://indcdn.indmoney.com/images/fe/old-bridge-mutual-fund.png"},
+  {"name":"PGIM","logo":"https://indcdn.indmoney.com/public/images/amc_pgim.png"},
+  {"name":"PPFAS","logo":"https://indcdn.indmoney.com/public/images/amc_parag.png"},
+  {"name":"Quant","logo":"https://indcdn.indmoney.com/public/images/amc_quant.png"},
+  {"name":"Quantum","logo":"https://indcdn.indmoney.com/public/images/amc_quantum.png"},
+  {"name":"Samco","logo":"https://indcdn.indmoney.com/public/images/amc_samco.png"},
+  {"name":"SBI","logo":"https://indcdn.indmoney.com/public/images/amc_sbi.png"},
+  {"name":"Shriram","logo":"https://indcdn.indmoney.com/public/images/amc_shriram.png"},
+  {"name":"Sundaram","logo":"https://indcdn.indmoney.com/public/images/amc_sundaram.png"},
+  {"name":"Tata","logo":"https://indcdn.indmoney.com/cdn-cgi/image/quality=90,format=auto,width=82.5/https://indcdn.indmoney.com//amc_tata_new.jpg"},
+  {"name":"Taurus","logo":"https://indcdn.indmoney.com/public/images/amc_taurus.png"},
+  {"name":"Trust","logo":"https://indcdn.indmoney.com/public/images/amc_trust_asset.png"},
+  {"name":"unifi","logo":"https://indcdn.indmoney.com/public/images/unifi_amc_logo.png"},
+  {"name":"Union","logo":"https://indcdn.indmoney.com/public/images/amc_union.png"},
+  {"name":"UTI","logo":"https://indcdn.indmoney.com/public/images/amc_uti.png"},
+  {"name":"WhiteOak","logo":"https://indcdn.indmoney.com/public/images/amc_whiteoakamc.png"},
+  {"name":"Zerodha","logo":"https://indcdn.indmoney.com/public/images/mf_zerodha.png"}
+];
+
+const ALIASES = {
+  "Aditya Birla Sun Life": ["aditya birla","birla","absl","aditya birla sun life"],
+  "Axis": ["axis"],
+  "Bajaj Finserv": ["bajaj","bajaj finserv"],
+  "Bandhan": ["bandhan"],
+  "BNP Paribas": ["bnp","bnpp","paribas","bnp paribas"],
+  "BOI AXA": ["boi axa","boiaxa","boi"],
+  "Canara Robeco": ["canara","robeco","canara robeco"],
+  "Capitalmind": ["capitalmind"],
+  "DSP": ["dsp"],
+  "Edelweiss": ["edelweiss"],
+  "Franklin Templeton": ["franklin","templeton","franklin templeton","ft"],
+  "Groww": ["groww"],
+  "HDFC": ["hdfc"],
+  "Helios": ["helios"],
+  "HSBC": ["hsbc"],
+  "ICICI": ["icici","icici prudential","icici pru"],
+  "Invesco": ["invesco"],
+  "ITI": ["iti"],
+  "Jio BlackRock": ["jio","blackrock","jio blackrock"],
+  "JM Financial": ["jm","jm financial"],
+  "Kotak": ["kotak"],
+  "LIC": ["lic","life insurance corporation"],
+  "Mahindra": ["mahindra","mahindra manulife","manulife"],
+  "Mirae": ["mirae","mirae asset"],
+  "Motilal Oswal": ["motilal","motilal oswal","mo"],
+  "NAVI": ["navi"],
+  "Nippon": ["nippon","reliance"], /* legacy alias */
+  "Nj": ["nj"],
+  "Old Bridge": ["old bridge"],
+  "PGIM": ["pgim","prudential"],
+  "PPFAS": ["ppfas","parag parikh","parag"],
+  "Quant": ["quant"],
+  "Quantum": ["quantum"],
+  "Samco": ["samco"],
+  "SBI": ["sbi","state bank"],
+  "Shriram": ["shriram"],
+  "Sundaram": ["sundaram"],
+  "Tata": ["tata"],
+  "Taurus": ["taurus"],
+  "Trust": ["trust","trust mf","trust mutual"],
+  "unifi": ["unifi","unifi capital"],
+  "Union": ["union","union mf"],
+  "UTI": ["uti","unit trust"],
+  "WhiteOak": ["whiteoak","white oak"],
+  "Zerodha": ["zerodha"],
+  "360 ONE": ["360 one","iox","360one"]
+};
+
+const logoBy = new Map(LOGOS.map(x=>[x.name,x.logo]));
+const colorBy = new Map(COLORS.map(x=>[x.name,{p:x.primaryHex,s:x.secondaryHex}]));
+
+const $ = id=>document.getElementById(id);
+const cardEl=$('card'),nohitEl=$('nohit');
+const nameEl=$('name'),hostEl=$('host'),logoEl=$('logo'),gradEl=$('grad');
+const pchip=$('pchip'),schip=$('schip'),pcopy=$('pcopy'),scopy=$('scopy');
+
+function textOn(hex){
+  if(!hex) return '#fff';
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if(!m) return '#fff';
+  const [r,g,b]=[m[1],m[2],m[3]].map(h=>parseInt(h,16)/255);
+  const L=0.2126*r+0.7152*g+0.0722*b;
+  return L>0.4?'#0a0e14':'#fff';
+}
+function renderAMC(name){
+  const logo=logoBy.get(name)||'';
+  const {p,s}=colorBy.get(name)||{};
+  nameEl.textContent=name;
+  hostEl.textContent=logo?new URL(logo).hostname:'No logo';
+  logoEl.src=logo;
+  gradEl.style.background=(p&&s)?`linear-gradient(to right,${p},${s})`:'#222';
+  pchip.textContent=p||'—'; pchip.style.background=p||'transparent'; pchip.style.color=textOn(p);
+  schip.textContent=s||'—'; schip.style.background=s||'transparent'; schip.style.color=textOn(s);
+  pcopy.disabled=!p; scopy.disabled=!s;
+  pcopy.onclick=()=>navigator.clipboard.writeText(p);
+  scopy.onclick=()=>navigator.clipboard.writeText(s);
+  cardEl.classList.add('show'); nohitEl.style.display='none';
+}
+function showNoHit(){cardEl.classList.remove('show');nohitEl.style.display='block';}
+$('go').onclick=()=>{
+  const q=$('fund').value.toLowerCase();
+  if(/\bquantum\b/.test(q)) return renderAMC("Quantum");
+  if(/\bquant\b/.test(q)) return renderAMC("Quant");
+  for(const name of colorBy.keys()){if(q.includes(name.toLowerCase())) return renderAMC(name);}
+  showNoHit();
+};
+
+function renderGrid(){
+  const grid=$('grid'); grid.innerHTML='';
+  COLORS.forEach(item=>{
+    const logo=logoBy.get(item.name)||'';
+    const card=document.createElement('div');
+    card.className='card-mini';
+    card.innerHTML=`
+      <div class="mini-top">
+        <div class="logo-title">
+          <div class="logo-wrap"><img src="${logo}" alt="${item.name} logo"/></div>
+          <div><div class="title">${item.name}</div></div>
+        </div>
+        <div class="gradient-bar" style="background:${item.primaryHex&&item.secondaryHex?`linear-gradient(to right,${item.primaryHex},${item.secondaryHex})`:'#222'}"></div>
+      </div>
+      <div class="swatches">
+        <div class="box">
+          <div class="chip" style="background:${item.primaryHex};color:${textOn(item.primaryHex)}">${item.primaryHex||'—'}</div>
+          <div class="code"><span class="pill">Primary</span><button class="copy" data-copy="${item.primaryHex||''}" ${item.primaryHex?'':'disabled'}>Copy</button></div>
+        </div>
+        <div class="box">
+          <div class="chip" style="background:${item.secondaryHex};color:${textOn(item.secondaryHex)}">${item.secondaryHex||'—'}</div>
+          <div class="code"><span class="pill">Secondary</span><button class="copy" data-copy="${item.secondaryHex||''}" ${item.secondaryHex?'':'disabled'}>Copy</button></div>
+        </div>
+      </div>`;
+    card.querySelectorAll('button.copy').forEach(btn=>{
+      btn.onclick=async e=>{
+        const v=btn.dataset.copy;if(!v) return;
+        await navigator.clipboard.writeText(v);
+        const old=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old,800);
+      };
+    });
+    grid.appendChild(card);
+  });
+}
+renderGrid();
+</script>
+</body>
+</html>
