@@ -1,50 +1,43 @@
-// worker.js — serves UI + API under /amc/*
-// API: /amc/<ISIN>/(primary|secondary|json)
-// Static: everything else under /amc/* served from ./public
+// worker.js — UI + API under /amc/*
+//
+// API:
+//   /amc/<ISIN>/primary
+//   /amc/<ISIN>/secondary
+//   /amc/<ISIN>/json          // { isin, name, amc, logo, primary, secondary }
+//   /amc/<ISIN>/name          // plain text
+//   /amc/<ISIN>/logo          // plain text (204 if unknown)
+//   /amc/<ISIN>/amc           // plain text
+//
+// Static: anything else under /amc/* is served from ./public (prefix stripped)
 
 import amcData from './public/amc_data.json';
 import isinList from './public/data.json';
+import enrichedBase from './public/enriched.json';
 
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
     const url = new URL(request.url);
 
-    // --- API
-    const m = url.pathname.match(/^\/amc\/([A-Za-z0-9]{12})\/(primary|secondary|json)$/);
+    // Add new kinds here:
+    const m = url.pathname.match(/^\/amc\/([A-Za-z0-9]{12})\/(primary|secondary|json|name|logo|amc)$/);
     if (m) {
       const [, isinRaw, kind] = m;
       const ISIN = isinRaw.toUpperCase();
 
       try {
-        const rec = isinList.find(x => x && String(x.isin).toUpperCase() === ISIN);
-        if (!rec) return cors(txt('ISIN not found', 404));
-        const fund = String(rec.name);
+        const info = getMergedRecord(ISIN);
+        if (!info) return cors(txt('ISIN not found', 404));
 
-        const COLORS  = amcData.colors  || [];
-        const LOGOS   = amcData.logos   || [];
-        const ALIASES = amcData.aliases || {};
-
-        const colorBy  = new Map(COLORS.map(x => [x.name, { p: x.primaryHex, s: x.secondaryHex }]));
-        const logoBy   = new Map(LOGOS.map(x => [x.name, x.logo]));
-        const amcNames = COLORS.map(c => c.name);
-
-        const { label, known } = detectAMCLabel(fund, ALIASES, amcNames);
-
-        let p, s, logo = null;
-        if (known && colorBy.has(label)) {
-          const pair = colorBy.get(label) || {};
-          p = pair.p || nameToHex(label);
-          s = pair.s || darken20(p);
-          logo = logoBy.get(label) || null;
-        } else {
-          p = nameToHex(label);
-          s = darken20(p);
+        if (kind === 'primary')   return cors(txt(info.primary));
+        if (kind === 'secondary') return cors(txt(info.secondary));
+        if (kind === 'json')      return cors(json(info));
+        if (kind === 'name')      return cors(txt(info.name));
+        if (kind === 'amc')       return cors(txt(info.amc));
+        if (kind === 'logo') {
+          if (!info.logo) return cors(new Response(null, { status: 204 })); // no logo known
+          return cors(txt(info.logo));
         }
-
-        if (kind === 'primary')   return cors(txt(p));
-        if (kind === 'secondary') return cors(txt(s));
-        if (kind === 'json')      return cors(json({ isin: ISIN, fund, amc: label, primary: p, secondary: s, logo }));
 
         return cors(txt('Not found', 404));
       } catch (e) {
@@ -52,7 +45,7 @@ export default {
       }
     }
 
-    // --- Static: strip /amc prefix and serve from /public
+    // ---- Static fallback: strip /amc prefix and serve from /public
     let assetPath = url.pathname.replace(/^\/amc\/?/, '/');
     if (assetPath === '/') assetPath = '/index.html';
     const assetUrl = new URL(assetPath, 'http://assets.local');
@@ -60,7 +53,60 @@ export default {
   }
 };
 
-/* ---------- helpers ---------- */
+/* ---------------- merge logic ---------------- */
+
+function getMergedRecord(ISIN) {
+  // base name from data.json
+  const base = isinList.find(x => x && String(x.isin).toUpperCase() === ISIN);
+  if (!base) return null;
+
+  // prefilled values (if any) from enriched.json
+  const found = (enrichedBase || []).find(x => x && String(x.isin).toUpperCase() === ISIN) || {};
+  const name = String(found.name || base.name || '');
+
+  // shortcut: if enriched already has colors/logo/amc, return it (with amc fallback)
+  if ((found.primary && found.secondary) || found.logo || found.amc) {
+    const COLORS = amcData.colors || [];
+    const ALIASES = amcData.aliases || {};
+    const { label } = detectAMCLabel(name, ALIASES, COLORS.map(c => c.name));
+    return {
+      isin: ISIN,
+      name,
+      amc: found.amc ?? label,
+      logo: found.logo ?? null,
+      primary: found.primary ?? nameToHex(found.amc ?? label),
+      secondary: found.secondary ?? darken20(found.primary ?? nameToHex(found.amc ?? label))
+    };
+  }
+
+  // compute from amc_data.json
+  const COLORS  = amcData.colors  || [];
+  const LOGOS   = amcData.logos   || [];
+  const ALIASES = amcData.aliases || {};
+
+  const colorBy  = new Map(COLORS.map(x => [x.name, { p: x.primaryHex, s: x.secondaryHex }]));
+  const logoBy   = new Map(LOGOS.map(x => [x.name, x.logo]));
+  const amcNames = COLORS.map(c => c.name);
+
+  const { label, known } = detectAMCLabel(name, ALIASES, amcNames);
+
+  let p, s, logo = null;
+  if (known && colorBy.has(label)) {
+    const pair = colorBy.get(label) || {};
+    p = pair.p || nameToHex(label);
+    s = pair.s || darken20(p);
+    logo = logoBy.get(label) || null;
+  } else {
+    p = nameToHex(label);
+    s = darken20(p);
+    logo = null;
+  }
+
+  return { isin: ISIN, name, amc: label, logo, primary: p, secondary: s };
+}
+
+/* ---------------- helpers ---------------- */
+
 function txt(s, status = 200) {
   return new Response(s, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
@@ -73,11 +119,6 @@ function cors(res) {
   h.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
   h.set('Access-Control-Allow-Headers', '*');
   return new Response(res.body, { status: res.status, headers: h });
-}
-async function cacheAndCors(res, request, ctx) {
-  const cache = caches.default;
-  ctx.waitUntil(cache.put(new Request(request.url), res.clone()));
-  return cors(res);
 }
 
 // ---- AMC detection + color helpers ----

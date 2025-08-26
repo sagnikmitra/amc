@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>AMC Finder • Logo & Colors by Fund Name</title>
+<title>AMC Finder • Fund Name / ISIN → AMC, Logo & Colors</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
   :root{ --bg:#0f1115; --card:#151922; --ink:#e8eef6; --muted:#95a3b8; --line:#222734; }
@@ -16,6 +16,15 @@
   .btn{appearance:none;border:1px solid var(--line);background:#111726;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   .hint{color:var(--muted);font-size:12px}
+  .nohit{margin-top:10px;padding:12px;border:1px dashed #394055;border-radius:10px;background:#0d1318;color:#b2c7d7}
+  h2{margin:26px 0 10px;font-size:18px}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;margin:10px 0 16px}
+  .tab{flex:1;display:inline-flex;justify-content:center;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:#0d1016;color:var(--ink);cursor:pointer;user-select:none}
+  .tab.active{background:#162033;border-color:#31405a;font-weight:600}
+
+  /* card */
   .card{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:none}
   .card.show{display:block}
   .top{padding:14px;border-bottom:1px solid var(--line)}
@@ -25,16 +34,19 @@
   .title{font-weight:600}
   .muted{color:var(--muted);font-size:12px}
   .grad{height:24px;border-radius:8px;border:1px solid var(--line)}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;padding:12px;border-bottom:1px solid var(--line)}
+  .kv .k{color:var(--muted)}
+  .kv .v code{background:#0d1016;border:1px solid var(--line);padding:2px 6px;border-radius:6px}
   .sw{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px}
   .box{border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .chip{height:46px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
   .code{padding:8px 10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
   .pill{font-size:11px;padding:2px 8px;border-radius:999px;background:#0d131b;border:1px solid var(--line);color:#95a3b8}
   .copy{border:1px solid var(--line);background:#111726;color:var(--ink);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px}
-  .nohit{margin-top:10px;padding:12px;border:1px dashed #394055;border-radius:10px;background:#0d1318;color:#b2c7d7}
-  h2{margin:26px 0 10px;font-size:18px}
+
+  /* grid */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:6px}
-  .card-mini{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer}
+  .card-mini{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .card-mini .mini-top{padding:12px;border-bottom:1px solid var(--line)}
   .card-mini .logo-title{display:flex;gap:12px;align-items:center;margin-bottom:10px}
   .card-mini .logo-wrap{width:50px;height:50px;border-radius:12px;overflow:hidden;background:#fff;display:grid;place-items:center;border:1px solid #e9eef3}
@@ -45,6 +57,7 @@
   /* Add-your-own section */
   .uploader{margin-top:24px;padding:16px;border:1px dashed var(--line);border-radius:14px;background:#0d1016}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:640px){ .two{grid-template-columns:1fr} }
   .stack{display:grid;gap:8px}
   .tiny{font-size:11px;color:#8ea0b6}
   .inputs-inline{display:flex;gap:8px;flex-wrap:wrap}
@@ -54,34 +67,65 @@
 </style>
 </head>
 <body>
-  <h1>Find AMC by Fund Name</h1>
-  <div class="sub">Enter any fund name (e.g., <em>Tata xyzzy fund</em>, <em>HDFC Index</em>). We’ll match the AMC keyword and show its Logo & Colors.</div>
-  <div class="row">
-    <label class="input" title="Type a fund name">
-      <input id="fund" placeholder="Tata xyzzy fund, HDFC Index, Aditya Birla Gold…" autofocus/>
-    </label>
-    <button class="btn" id="go">Find AMC</button>
+  <h1>AMC Finder</h1>
+  <div class="sub">Toggle the mode: <strong>Fund Name</strong> or <strong>ISIN</strong>. We’ll detect the AMC and show its Logo & Brand Colors.</div>
+
+  <!-- Segmented control -->
+  <div class="tabs" role="tablist" aria-label="Lookup mode">
+    <button id="tab-name" class="tab active" role="tab" aria-selected="true" aria-controls="panel-name">Lookup by Fund Name</button>
+    <button id="tab-isin" class="tab" role="tab" aria-selected="false" aria-controls="panel-isin">Lookup by ISIN</button>
   </div>
 
-  <div id="nohit" class="nohit" style="display:none">No AMC keyword found.</div>
+  <!-- Panel: Fund Name -->
+  <section id="panel-name" role="tabpanel" aria-labelledby="tab-name">
+    <div class="row">
+      <label class="input" title="Type a fund name">
+        <input id="fund" placeholder="Tata xyzzy fund, HDFC Index, Aditya Birla Gold…" autofocus/>
+      </label>
+      <button class="btn" id="go-name">Find AMC</button>
+    </div>
+  </section>
 
+  <!-- Panel: ISIN -->
+  <section id="panel-isin" role="tabpanel" aria-labelledby="tab-isin" hidden>
+    <div class="row">
+      <label class="input" title="Enter an ISIN">
+        <input id="isin" placeholder="e.g., INF189A01046" autocapitalize="characters"/>
+      </label>
+      <button class="btn" id="go-isin">Lookup</button>
+      <button class="btn" id="demo">Load Demo ISINs</button>
+    </div>
+    <div class="hint">Tip: place a <code>data.json</code> next to this file with entries like:
+      <code>[{"isin":"INF189A01046","fundName":"UTI Top 100 Fund"}, ...]</code>
+    </div>
+  </section>
+
+  <div id="msg" class="nohit" style="display:none" role="status" aria-live="polite"></div>
+
+  <!-- Shared result card -->
   <section id="card" class="card" aria-live="polite">
     <div class="top">
       <div class="topgrid">
         <div class="logo"><img id="logo" alt="AMC logo"/></div>
         <div>
-          <div class="title" id="name">—</div>
+          <div class="title" id="amc-name">—</div>
           <div class="muted" id="host">—</div>
         </div>
       </div>
       <div id="grad" class="grad"></div>
     </div>
+
+    <div class="kv" id="kv">
+      <div class="k">Fund Name</div><div class="v" id="fund-name">—</div>
+      <div class="k">ISIN</div><div class="v"><code id="fund-isin">—</code></div>
+    </div>
+
     <div class="sw">
-      <div id="pbox" class="box">
+      <div class="box">
         <div id="pchip" class="chip">—</div>
         <div class="code"><span class="pill">Primary</span><button id="pcopy" class="copy" disabled>Copy</button></div>
       </div>
-      <div id="sbox" class="box">
+      <div class="box">
         <div id="schip" class="chip">—</div>
         <div class="code"><span class="pill">Secondary</span><button id="scopy" class="copy" disabled>Copy</button></div>
       </div>
@@ -132,7 +176,9 @@
   </div>
 
 <script>
-/* ===== Seed Data ===== */
+/* ===========================
+   Seed Data (colors & logos)
+   =========================== */
 const COLORS = [
   {"name":"360 ONE","primaryHex":"#05030f","secondaryHex":"#04020c"},
   {"name":"Aditya Birla Sun Life","primaryHex":"#d44945","secondaryHex":"#b72e2a"},
@@ -233,7 +279,7 @@ const LOGOS = [
   {"name":"Zerodha","logo":"https://indcdn.indmoney.com/public/images/mf_zerodha.png"}
 ];
 
-/* ===== Alias map (used earlier in your code) kept as-is ===== */
+/* Alias map */
 const ALIASES = {
   "Aditya Birla Sun Life": ["aditya birla","birla","absl","aditya birla sun life"],
   "Axis": ["axis"],
@@ -261,7 +307,7 @@ const ALIASES = {
   "Mirae": ["mirae","mirae asset"],
   "Motilal Oswal": ["motilal","motilal oswal","mo"],
   "NAVI": ["navi"],
-  "Nippon": ["nippon","reliance"], 
+  "Nippon": ["nippon","reliance"],
   "Nj": ["nj"],
   "Old Bridge": ["old bridge"],
   "PGIM": ["pgim","prudential"],
@@ -286,10 +332,15 @@ const ALIASES = {
 const logoBy = new Map(LOGOS.map(x=>[x.name,x.logo]));
 const colorBy = new Map(COLORS.map(x=>[x.name,{p:x.primaryHex,s:x.secondaryHex}]));
 
+/* ===========================
+   Utilities
+   =========================== */
 const $ = id=>document.getElementById(id);
-const cardEl=$('card'),nohitEl=$('nohit');
-const nameEl=$('name'),hostEl=$('host'),logoEl=$('logo'),gradEl=$('grad');
-const pchip=$('pchip'),schip=$('schip'),pcopy=$('pcopy'),scopy=$('scopy');
+const cardEl=$('card'), msgEl=$('msg');
+const amcNameEl=$('amc-name'), hostEl=$('host'), logoEl=$('logo'), gradEl=$('grad');
+const fundNameEl=$('fund-name'), fundIsinEl=$('fund-isin');
+const pchip=$('pchip'), schip=$('schip'), pcopy=$('pcopy'), scopy=$('scopy');
+const kvEl = $('kv');
 
 function textOn(hex){
   if(!hex) return '#fff';
@@ -299,29 +350,126 @@ function textOn(hex){
   const L=0.2126*r+0.7152*g+0.0722*b;
   return L>0.4?'#0a0e14':'#fff';
 }
-function renderAMC(name){
+function showMsg(t){ msgEl.textContent=t; msgEl.style.display='block'; cardEl.classList.remove('show'); }
+function clearMsg(){ msgEl.style.display='none'; msgEl.textContent=''; }
+
+/* Render selected AMC */
+function renderAMC(name, opts={}){
   const logo=logoBy.get(name)||'';
-  const {p,s}=colorBy.get(name)||{};
-  nameEl.textContent=name;
-  hostEl.textContent=logo?new URL(logo).hostname:'No logo';
-  logoEl.src=logo;
+  const cs=colorBy.get(name)||{};
+  const p=cs.p||null, s=cs.s||null;
+
+  amcNameEl.textContent=name||'—';
+  if(logo){
+    try{ hostEl.textContent=new URL(logo).hostname; }catch{ hostEl.textContent='Logo'; }
+  }else{
+    hostEl.textContent='No logo';
+  }
+  logoEl.src=logo||'';
   gradEl.style.background=(p&&s)?`linear-gradient(to right,${p},${s})`:'#222';
+
   pchip.textContent=p||'—'; pchip.style.background=p||'transparent'; pchip.style.color=textOn(p);
   schip.textContent=s||'—'; schip.style.background=s||'transparent'; schip.style.color=textOn(s);
+
   pcopy.disabled=!p; scopy.disabled=!s;
-  pcopy.onclick=()=>navigator.clipboard.writeText(p);
-  scopy.onclick=()=>navigator.clipboard.writeText(s);
-  cardEl.classList.add('show'); nohitEl.style.display='none';
+  pcopy.onclick=()=>p && navigator.clipboard.writeText(p);
+  scopy.onclick=()=>s && navigator.clipboard.writeText(s);
+
+  // optional metadata rows (fund+isin) if provided
+  if(opts.kv === false){ kvEl.style.display='none'; }
+  else{
+    kvEl.style.display='grid';
+    fundNameEl.textContent = opts.fundName || '—';
+    fundIsinEl.textContent = opts.isin || '—';
+  }
+
+  clearMsg();
+  cardEl.classList.add('show');
 }
-function showNoHit(){cardEl.classList.remove('show');nohitEl.style.display='block';}
-$('go').onclick=()=>{
-  const q=$('fund').value.toLowerCase();
-  if(/\bquantum\b/.test(q)) return renderAMC("Quantum");
-  if(/\bquant\b/.test(q)) return renderAMC("Quant");
-  for(const name of colorBy.keys()){if(q.includes(name.toLowerCase())) return renderAMC(name);}
-  showNoHit();
+
+/* Name detection from free text fund name */
+function detectAMCFromText(text){
+  const q = (text||'').toLowerCase();
+
+  // special handling: Quantum vs Quant
+  if(/\bquantum\b/.test(q)) return 'Quantum';
+  if(/\bquant\b/.test(q)) return 'Quant';
+
+  // alias hits
+  for(const [name, list] of Object.entries(ALIASES)){
+    for(const a of list){ if(q.includes(a.toLowerCase())) return name; }
+  }
+  // fallback: include brand name literal
+  for(const name of colorBy.keys()){
+    if(q.includes(name.toLowerCase())) return name;
+  }
+  return null;
+}
+
+/* ===========================
+   Fund Name mode
+   =========================== */
+$('go-name').onclick=()=>{
+  const q=$('fund').value.trim();
+  if(!q){ showMsg('Please enter a fund name.'); return; }
+  const amc = detectAMCFromText(q);
+  if(amc) renderAMC(amc, { fundName:q, kv:true, isin:'' });
+  else showMsg('No AMC keyword found in the fund name.');
 };
 
+/* ===========================
+   ISIN mode
+   =========================== */
+/* Embedded demo dataset (fallback) */
+const DATA_DEMO = [
+  { isin:"INF189A01046", fundName:"UTI Top 100 Fund" },
+  { isin:"INF109K01ZV5", fundName:"HDFC Index Fund - Nifty 50 Plan" },
+  { isin:"INF846K01AL2", fundName:"SBI Bluechip Fund" },
+  { isin:"INF200K01303", fundName:"ICICI Prudential Bluechip Fund" },
+  { isin:"INF179K01BB8", fundName:"Kotak Flexicap Fund" },
+  { isin:"INF174K01DC2", fundName:"Franklin India Flexi Cap Fund" }
+];
+
+/* Try load data.json if available; otherwise use demo */
+let ISIN_MAP = null;
+async function ensureData(){
+  if(ISIN_MAP) return;
+  const map = new Map();
+  try{
+    const res = await fetch('./data.json',{cache:'no-store'});
+    if(res.ok){
+      const arr = await res.json();
+      (arr||[]).forEach(x=>{
+        if(x && x.isin && x.fundName){ map.set(String(x.isin).toUpperCase(), String(x.fundName)); }
+      });
+    }
+  }catch{/* ignore */}
+  if(map.size===0){
+    DATA_DEMO.forEach(x=>map.set(x.isin.toUpperCase(), x.fundName));
+  }
+  ISIN_MAP = map;
+}
+
+$('go-isin').onclick = async ()=>{
+  const raw = $('isin').value.trim();
+  if(!raw){ showMsg('Please enter an ISIN.'); return; }
+  const key = raw.toUpperCase();
+  await ensureData();
+  const fname = ISIN_MAP.get(key);
+  if(!fname){ showMsg('ISIN not found in dataset. Add it to data.json or use the demo button.'); return; }
+  const amc = detectAMCFromText(fname);
+  if(amc) renderAMC(amc, { fundName: fname, isin: key, kv:true });
+  else showMsg('Found the fund name, but could not detect its AMC keyword.');
+};
+
+$('demo').onclick = ()=>{
+  $('isin').value = DATA_DEMO[0].isin;
+  $('isin').focus();
+};
+
+/* ===========================
+   Grid render (All AMCs)
+   =========================== */
 function renderGrid(){
   const grid=$('grid'); grid.innerHTML='';
   COLORS.forEach(item=>{
@@ -358,7 +506,9 @@ function renderGrid(){
 }
 renderGrid();
 
-/* ====== ADD-YOUR-OWN logic ====== */
+/* ===========================
+   Add-your-own logic
+   =========================== */
 const upName = $('u-name');
 const upUrl = $('u-url');
 const upFile = $('u-file');
@@ -371,15 +521,14 @@ const upAdd = $('u-add');
 const addedBox = $('added');
 
 let loadedImage = new Image();
-let loadedSource = null; // string: URL or objectURL
-loadedImage.crossOrigin = 'anonymous'; // attempt CORS for remote
+let loadedSource = null;
+loadedImage.crossOrigin = 'anonymous';
 
-// helper: RGB -> hex
+// helpers
 function rgbToHex(r,g,b){
   const to2 = v => ('0'+Math.max(0,Math.min(255, v|0)).toString(16)).slice(-2);
   return '#'+to2(r)+to2(g)+to2(b);
 }
-// helper: darken by 20%
 function darken20(hex){
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
   if(!m) return '';
@@ -388,50 +537,22 @@ function darken20(hex){
   const b = Math.floor(parseInt(m[3],16)*0.8);
   return rgbToHex(r,g,b);
 }
-
-// Your provided average RGB function
 function getAverageRGB(imgEl) {
-  var blockSize = 5,
-      defaultRGB = {r:0,g:0,b:0},
+  var blockSize = 5, defaultRGB = {r:0,g:0,b:0},
       canvas = document.createElement('canvas'),
       context = canvas.getContext && canvas.getContext('2d'),
-      data, width, height,
-      i = -4,
-      length,
-      rgb = {r:0,g:0,b:0},
-      count = 0;
-
+      data, width, height, i = -4, length, rgb = {r:0,g:0,b:0}, count = 0;
   if (!context) { return defaultRGB; }
-
   height = canvas.height = imgEl.naturalHeight || imgEl.offsetHeight || imgEl.height;
   width = canvas.width = imgEl.naturalWidth || imgEl.offsetWidth || imgEl.width;
-
   context.drawImage(imgEl, 0, 0);
-
-  try {
-      data = context.getImageData(0, 0, width, height);
-  } catch(e) {
-      alert('Cannot read pixels from this image (CORS blocked). Try uploading the file instead.');
-      return defaultRGB;
-  }
-
+  try { data = context.getImageData(0, 0, width, height); }
+  catch(e){ alert('Cannot read pixels from this image (CORS blocked). Try uploading the file instead.'); return defaultRGB; }
   length = data.data.length;
-
-  while ( (i += blockSize * 4) < length ) {
-      ++count;
-      rgb.r += data.data[i];
-      rgb.g += data.data[i+1];
-      rgb.b += data.data[i+2];
-  }
-
-  rgb.r = ~~(rgb.r/count);
-  rgb.g = ~~(rgb.g/count);
-  rgb.b = ~~(rgb.b/count);
-
+  while ( (i += blockSize * 4) < length ) { ++count; rgb.r += data.data[i]; rgb.g += data.data[i+1]; rgb.b += data.data[i+2]; }
+  rgb.r = ~~(rgb.r/count); rgb.g = ~~(rgb.g/count); rgb.b = ~~(rgb.b/count);
   return rgb;
 }
-
-// load image from URL or object URL and show preview
 function loadForPreview(src){
   return new Promise((resolve,reject)=>{
     loadedImage.onload = ()=>{ 
@@ -445,36 +566,18 @@ function loadForPreview(src){
     loadedImage.src = src;
   });
 }
-
-// File upload handler
 upFile.addEventListener('change', async () => {
   const f = upFile.files && upFile.files[0];
   if(!f) return;
   const obj = URL.createObjectURL(f);
-  try{
-    await loadForPreview(obj);
-  }catch{
-    upSrc.textContent = 'Failed to load image.';
-  }
+  try{ await loadForPreview(obj); }catch{ upSrc.textContent = 'Failed to load image.'; }
 });
-
-// URL change handler – live preview if possible
 upUrl.addEventListener('change', async ()=>{
-  const url = upUrl.value.trim();
-  if(!url) return;
-  try{
-    await loadForPreview(url);
-  }catch{
-    upSrc.textContent = 'Failed to load URL image. You can try uploading the file.';
-  }
+  const url = upUrl.value.trim(); if(!url) return;
+  try{ await loadForPreview(url); }catch{ upSrc.textContent = 'Failed to load URL image. You can try uploading the file.'; }
 });
-
-// Detect colors
 upDetect.addEventListener('click', ()=>{
-  if(!loadedImage || !loadedImage.complete){
-    alert('Please paste a Logo URL or upload a logo first.');
-    return;
-  }
+  if(!loadedImage || !loadedImage.complete){ alert('Please paste a Logo URL or upload a logo first.'); return; }
   const avg = getAverageRGB(loadedImage);
   const primary = rgbToHex(avg.r, avg.g, avg.b);
   const secondary = darken20(primary);
@@ -482,56 +585,71 @@ upDetect.addEventListener('click', ()=>{
   upSecondary.value = secondary;
   upAdd.disabled = !upName.value.trim() || !primary || !secondary;
 });
-
-// Enable Add button when name/hex present
 function maybeEnableAdd(){
-  upAdd.disabled = !(upName.value.trim() && /^#?[0-9a-f]{6}$/i.test(upPrimary.value.trim()) && /^#?[0-9a-f]{6}$/i.test(upSecondary.value.trim()));
+  const hexOk = h => /^#?[0-9a-f]{6}$/i.test(h.trim());
+  upAdd.disabled = !(upName.value.trim() && hexOk(upPrimary.value) && hexOk(upSecondary.value));
 }
 upName.addEventListener('input', maybeEnableAdd);
 upPrimary.addEventListener('input', maybeEnableAdd);
 upSecondary.addEventListener('input', maybeEnableAdd);
-
-// Normalize hex like #AABBCC
-function normalizeHex(h){
-  h = h.trim();
-  if(!h.startsWith('#')) h = '#'+h;
-  return h.toUpperCase();
-}
-
-// Add to list & re-render
+function normalizeHex(h){ h=h.trim(); if(!h.startsWith('#')) h='#'+h; return h.toUpperCase(); }
 upAdd.addEventListener('click', ()=>{
   const name = upName.value.trim();
   if(!name){ alert('Enter a name.'); return; }
-
   const p = normalizeHex(upPrimary.value);
   const s = normalizeHex(upSecondary.value);
+  const logoPath = loadedSource || upUrl.value.trim() || '';
 
-  // decide logo path: prefer uploaded/URL preview, else typed URL
-  let logoPath = loadedSource || upUrl.value.trim() || '';
-
-  // append to arrays
   COLORS.push({ name, primaryHex: p, secondaryHex: s });
   LOGOS.push({ name, logo: logoPath });
-
-  // update maps
   logoBy.set(name, logoPath);
   colorBy.set(name, {p, s});
 
-  // show quick line with details
+  // Allow detection by literal brand name too
+  if(!ALIASES[name]) ALIASES[name] = [name.toLowerCase()];
+
   addedBox.style.display='block';
   const line = document.createElement('div');
   line.innerHTML = `<span class="tiny">Added:</span> <strong>${name}</strong> &nbsp;|&nbsp; <span class="tiny">Logo:</span> <span style="opacity:.9">${logoPath || '—'}</span> &nbsp;|&nbsp; <span class="tiny">Primary:</span> <code>${p}</code> &nbsp; <span class="tiny">Secondary:</span> <code>${s}</code>`;
   addedBox.appendChild(line);
 
-  // refresh grid
   renderGrid();
-
-  // reset minimal form state (keep image/URL for convenience)
-  upName.value = '';
-  upAdd.disabled = true;
+  upName.value = ''; upAdd.disabled = true;
 });
 
-/* ===== initial grid render already called above ===== */
+/* ===========================
+   Tabs (mobile friendly)
+   =========================== */
+const tabName = $('tab-name');
+const tabIsin = $('tab-isin');
+const panelName = $('panel-name');
+const panelIsin = $('panel-isin');
+
+function activate(tab){
+  const byId = id=>document.getElementById(id);
+  if(tab==='name'){
+    tabName.classList.add('active'); tabName.setAttribute('aria-selected','true');
+    tabIsin.classList.remove('active'); tabIsin.setAttribute('aria-selected','false');
+    panelName.hidden = false; panelIsin.hidden = true;
+    $('fund').focus();
+    kvEl.style.display='grid'; // still show KV (Fund Name row will fill)
+  }else{
+    tabIsin.classList.add('active'); tabIsin.setAttribute('aria-selected','true');
+    tabName.classList.remove('active'); tabName.setAttribute('aria-selected','false');
+    panelIsin.hidden = false; panelName.hidden = true;
+    $('isin').focus();
+    kvEl.style.display='grid';
+  }
+  clearMsg();
+}
+tabName.addEventListener('click', ()=>activate('name'));
+tabIsin.addEventListener('click', ()=>activate('isin'));
+
+/* Copy buttons initial handlers */
+pcopy.onclick = scopy.onclick = ()=>{};
+
+/* Init */
+activate('name');
 </script>
 </body>
 </html>
